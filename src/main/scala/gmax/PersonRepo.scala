@@ -1,9 +1,6 @@
 package gmax
 
 import cats.effect.{ContextShift, IO}
-import com.mchange.v2.c3p0.ComboPooledDataSource
-import com.typesafe.config.Config
-import javax.sql.DataSource
 import slick.jdbc.H2Profile.api._
 import slick.lifted.ProvenShape._
 
@@ -53,12 +50,11 @@ sealed trait PersonApi {
   def updatePerson(person: Person): IO[Either[String, Int]]
 }
 
-class PersonRepo(ds: DataSource, maxConnections: Int) extends PersonApi with PersonModel {
+class PersonRepo(db: Database) extends PersonApi with PersonModel {
 
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ec)
 
-  val db = Database.forDataSource(ds, maxConnections = Option(maxConnections))
   initialize(db)
 
   def getPersons: IO[Either[String, List[Person]]] = IO.fromFuture(IO.delay(
@@ -104,14 +100,7 @@ class PersonRepo(ds: DataSource, maxConnections: Int) extends PersonApi with Per
 
 object PersonRepo {
 
-  def apply(cfg: Config): PersonRepo = {
-
-    val ds = new ComboPooledDataSource
-    ds.setDriverClass(cfg.getString("driver"))
-    ds.setJdbcUrl(cfg.getString("url"))
-    ds.setUser(cfg.getString("username"))
-    ds.setPassword(cfg.getString("password"))
-
-    new PersonRepo(ds, cfg.getInt("maxConnections"))
+  def apply(db: Database): PersonRepo = {
+    new PersonRepo(db)
   }
 }
