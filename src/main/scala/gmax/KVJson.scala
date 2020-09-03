@@ -2,11 +2,11 @@ package gmax
 
 import io.circe.Json
 
-object KVJson {
+sealed trait KVJsonCodec[T] {
+  def kv(key: String, value: T): Json
+}
 
-  sealed trait KVJsonCodec[T] {
-    def kv(key: String, value: T): Json
-  }
+object KVJson {
 
   implicit object kvString extends KVJsonCodec[String] {
     def kv(key: String, value: String): Json = Json.obj(
