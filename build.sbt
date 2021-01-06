@@ -4,8 +4,11 @@ version := "0.1"
 
 scalaVersion := "2.13.2"
 
-val http4sVersion = "0.21.3"
-val circeVersion = "0.12.0"
+val http4sVersion = "0.21.15"
+val circeVersion = "0.13.0"
+val slickVersion = "3.3.3"
+val h2Version = "1.4.200"
+val slf4jVersion = "1.7.30"
 
 // Only necessary for SNAPSHOT releases
 resolvers += Resolver.sonatypeRepo("snapshots")
@@ -19,9 +22,9 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-generic" % circeVersion,
   "io.circe" %% "circe-parser" % circeVersion,
   "io.circe" %% "circe-yaml" % circeVersion,
-  "org.slf4j" % "slf4j-api" % "1.7.5",
-  "org.slf4j" % "slf4j-simple" % "1.6.4",
-  "com.typesafe.slick" %% "slick" % "3.3.2",
-  "c3p0" % "c3p0" % "0.9.1.2",
-  "com.h2database" % "h2" % "1.4.200"
+  "com.typesafe.slick" %% "slick" % slickVersion,
+  "com.typesafe.slick" %% "slick-hikaricp" % slickVersion,
+  "com.h2database" % "h2" % h2Version,
+  "org.slf4j" % "slf4j-api" % slf4jVersion,
+  "org.slf4j" % "slf4j-simple" % slf4jVersion
 )

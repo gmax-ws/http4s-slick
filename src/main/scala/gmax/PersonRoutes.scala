@@ -7,7 +7,14 @@ import org.http4s.HttpRoutes
 import org.http4s.circe.CirceEntityCodec._
 import org.http4s.dsl.Http4sDsl
 
-object PersonRoutes extends Http4sDsl[IO] {
+sealed trait HealthRoutes extends Http4sDsl[IO] {
+  def liveRoutes: HttpRoutes[IO] = HttpRoutes.of[IO] {
+    case GET -> Root / "ready" => Ok("OK")
+    case GET -> Root / "live" => Ok("OK")
+  }
+}
+
+object PersonRoutes extends HealthRoutes {
 
   def routes(personRepo: PersonRepo): HttpRoutes[IO] = HttpRoutes.of[IO] {
 
@@ -20,7 +27,7 @@ object PersonRoutes extends Http4sDsl[IO] {
     case req@POST -> Root / "person" =>
       req.decode[Person] { person =>
         personRepo.addPerson(person) flatMap {
-          case Right(p) => Created(person)
+          case Right(_) => Created(person)
           case Left(message) => BadRequest(kvJson("message", message))
         }
       }
@@ -35,7 +42,7 @@ object PersonRoutes extends Http4sDsl[IO] {
       req.decode[Person] { person =>
         personRepo.updatePerson(person) flatMap {
           case Left(message) => NotFound(kvJson("message", message))
-          case Right(p) => Ok(person)
+          case Right(_) => Ok(person)
         }
       }
 

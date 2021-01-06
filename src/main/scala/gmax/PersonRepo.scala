@@ -5,7 +5,7 @@ import slick.jdbc.H2Profile.api._
 import slick.lifted.ProvenShape._
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
+import scala.concurrent.{Await, ExecutionContextExecutor}
 
 case class Person(id: Int, name: String, age: Int)
 
@@ -50,9 +50,8 @@ sealed trait PersonApi {
   def updatePerson(person: Person): IO[Either[String, Int]]
 }
 
-class PersonRepo(db: Database) extends PersonApi with PersonModel {
+class PersonRepo(db: Database)(implicit ec: ExecutionContextExecutor) extends PersonApi with PersonModel {
 
-  implicit val ec: ExecutionContextExecutor = ExecutionContext.global
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ec)
 
   initialize(db)
@@ -100,7 +99,7 @@ class PersonRepo(db: Database) extends PersonApi with PersonModel {
 
 object PersonRepo {
 
-  def apply(db: Database): PersonRepo = {
+  def apply(db: Database)(implicit ec: ExecutionContextExecutor): PersonRepo = {
     new PersonRepo(db)
   }
 }
