@@ -1,4 +1,4 @@
-package gmax
+package gmax.json
 
 import io.circe.Json
 

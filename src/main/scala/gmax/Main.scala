@@ -3,6 +3,8 @@ package gmax
 import cats.data.Kleisli
 import cats.effect.{ExitCode, IO, IOApp}
 import com.typesafe.config.ConfigFactory
+import gmax.repo.PersonRepo
+import gmax.routes.{HealthRoutes, PersonRoutes}
 import org.http4s.implicits._
 import org.http4s.server.Router
 import org.http4s.server.blaze._
@@ -18,8 +20,8 @@ object Main extends IOApp {
   private val personRepo: PersonRepo = PersonRepo(db(cfg.getConfig("db")))
 
   private val routes: Kleisli[IO, Request[IO], Response[IO]] = Router[IO](
-    "/api" -> PersonRoutes.routes(personRepo),
-    "/.well-known" -> PersonRoutes.liveRoutes
+    "/api" -> PersonRoutes.personRoutes(personRepo),
+    "/.well-known" -> HealthRoutes.healthRoutes
   ).orNotFound
 
   private val methodConfig: CORSConfig = cors(cfg.getConfig("cors"))

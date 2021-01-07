@@ -1,4 +1,4 @@
-package gmax
+package gmax.repo
 
 import cats.effect.{ContextShift, IO}
 import slick.jdbc.H2Profile.api._
