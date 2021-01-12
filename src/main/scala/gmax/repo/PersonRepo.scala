@@ -32,25 +32,25 @@ sealed trait PersonModel {
       // Insert some persons
       persons += (58, "John", 62),
       persons += (63, "Hellen", 57),
-      persons += (89, "Tedy", 31)
+      persons += (89, "Teddy", 31)
     )
     Await.result(db.run(setup), 10.seconds)
   }
 }
 
-sealed trait PersonApi {
-  def getPerson(id: Int): IO[Either[String, Person]]
+sealed trait PersonApi[F[_]] {
+  def getPerson(id: Int): F[Either[String, Person]]
 
-  def getPersons: IO[Either[String, List[Person]]]
+  def getPersons: F[Either[String, List[Person]]]
 
-  def addPerson(person: Person): IO[Either[String, Int]]
+  def addPerson(person: Person): F[Either[String, Int]]
 
-  def deletePerson(id: Int): IO[Either[String, Int]]
+  def deletePerson(id: Int): F[Either[String, Int]]
 
-  def updatePerson(person: Person): IO[Either[String, Int]]
+  def updatePerson(person: Person): F[Either[String, Int]]
 }
 
-class PersonRepo(db: Database)(implicit ec: ExecutionContextExecutor) extends PersonApi with PersonModel {
+class PersonRepo(db: Database)(implicit ec: ExecutionContextExecutor) extends PersonApi[IO] with PersonModel {
 
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ec)
 
