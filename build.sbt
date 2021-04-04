@@ -9,11 +9,13 @@ val circeVersion = "0.13.0"
 val slickVersion = "3.3.3"
 val h2Version = "1.4.200"
 val slf4jVersion = "1.7.30"
+val ctVersion = "0.12"
 
 // Only necessary for SNAPSHOT releases
 resolvers += Resolver.sonatypeRepo("snapshots")
 
 libraryDependencies ++= Seq(
+  "org.typelevel" %% "cats-tagless-macros" % ctVersion,
   "org.http4s" %% "http4s-dsl" % http4sVersion,
   "org.http4s" %% "http4s-blaze-server" % http4sVersion,
   "org.http4s" %% "http4s-blaze-client" % http4sVersion,

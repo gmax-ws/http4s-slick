@@ -1,11 +1,10 @@
 package gmax.repo
 
-import cats.effect.{ContextShift, IO}
 import slick.jdbc.H2Profile.api._
 import slick.lifted.ProvenShape._
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContextExecutor}
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 
 case class Person(id: Int, name: String, age: Int)
 
@@ -38,7 +37,7 @@ sealed trait PersonModel {
   }
 }
 
-sealed trait PersonApi[F[_]] {
+trait PersonApi[F[_]] {
   def getPerson(id: Int): F[Either[String, Person]]
 
   def getPersons: F[Either[String, List[Person]]]
@@ -50,51 +49,44 @@ sealed trait PersonApi[F[_]] {
   def updatePerson(person: Person): F[Either[String, Int]]
 }
 
-class PersonRepo(db: Database)(implicit ec: ExecutionContextExecutor) extends PersonApi[IO] with PersonModel {
-
-  implicit val contextShift: ContextShift[IO] = IO.contextShift(ec)
+class PersonRepo(db: Database)(implicit ec: ExecutionContextExecutor) extends PersonApi[Future] with PersonModel {
 
   initialize(db)
 
-  def getPersons: IO[Either[String, List[Person]]] = IO.fromFuture(IO.delay(
+  def getPersons: Future[Either[String, List[Person]]] =
     (for {
       person <- db.run(persons.result)
     } yield Right(person.map(tuple => Person tupled tuple).toList)).recover {
       case e: Exception => Left(e.getMessage)
     }
-  ))
 
-  def getPerson(id: Int): IO[Either[String, Person]] = IO.fromFuture(IO.delay(
+  def getPerson(id: Int): Future[Either[String, Person]] =
     (for {
       persons <- db.run(persons.filter(_.id === id).result.headOption)
     } yield persons.map(tuple => Person tupled tuple).toRight(s"Person id=$id not found.")).recover {
       case e: Exception => Left(e.getMessage)
     }
-  ))
 
-  def addPerson(person: Person): IO[Either[String, Int]] = IO.fromFuture(IO.delay(
+  def addPerson(person: Person): Future[Either[String, Int]] =
     (for {
       result <- db.run(persons += Person.unapply(person).get)
     } yield Right(result)).recover {
       case e: Exception => Left(e.getMessage)
     }
-  ))
 
-  def deletePerson(id: Int): IO[Either[String, Int]] = IO.fromFuture(IO.delay(
+  def deletePerson(id: Int): Future[Either[String, Int]] =
     (for {
       result <- db.run(persons.filter(_.id === id).delete)
     } yield if (result == 0) Left(s"Cannot delete, person id=$id not found.") else Right(result)).recover {
       case e: Exception => Left(e.getMessage)
     }
-  ))
 
-  def updatePerson(person: Person): IO[Either[String, Int]] = IO.fromFuture(IO.delay(
+  def updatePerson(person: Person): Future[Either[String, Int]] =
     (for {
       result <- db.run(persons.filter(_.id === person.id).update(Person.unapply(person).get))
     } yield if (result == 0) Left(s"Cannot update, person id=${person.id} not found.") else Right(result)).recover {
       case e: Exception => Left(e.getMessage)
     }
-  ))
 }
 
 object PersonRepo {
