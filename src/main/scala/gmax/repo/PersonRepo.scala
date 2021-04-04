@@ -1,25 +1,23 @@
 package gmax.repo
 
 import slick.jdbc.H2Profile.api._
-import slick.lifted.ProvenShape._
+import slick.lifted.ProvenShape
 
+import scala.concurrent._
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 
 case class Person(id: Int, name: String, age: Int)
 
 sealed trait PersonModel {
 
-  class Persons(tag: Tag) extends Table[(Int, String, Int)](tag, "PERSONS") {
-    def id = column[Int]("ID", O.PrimaryKey)
+  class Persons(tag: Tag) extends Table[Person](tag, "PERSONS") {
+    def id: Rep[Int] = column[Int]("ID", O.PrimaryKey)
 
-    def name = column[String]("NAME")
+    def name: Rep[String] = column[String]("NAME")
 
-    def age = column[Int]("AGE")
+    def age: Rep[Int] = column[Int]("AGE")
 
-    def * = (id, name, age)
-
-    // def * = (id, name, age) <> ((Person.apply _).tupled, Person.unapply)
+    def * : ProvenShape[Person] = (id, name, age) <> (Person.tupled, Person.unapply)
   }
 
   val persons = TableQuery[Persons]
@@ -29,9 +27,9 @@ sealed trait PersonModel {
       // Create table, including primary and foreign keys
       persons.schema.create,
       // Insert some persons
-      persons += (58, "John", 62),
-      persons += (63, "Hellen", 57),
-      persons += (89, "Teddy", 31)
+      persons += Person(58, "John", 62),
+      persons += Person(63, "Hellen", 57),
+      persons += Person(89, "Teddy", 31)
     )
     Await.result(db.run(setup), 10.seconds)
   }
@@ -55,21 +53,24 @@ class PersonRepo(db: Database)(implicit ec: ExecutionContextExecutor) extends Pe
 
   def getPersons: Future[Either[String, List[Person]]] =
     (for {
-      person <- db.run(persons.result)
-    } yield Right(person.map(tuple => Person tupled tuple).toList)).recover {
+      personList <- db.run(persons.result)
+    } yield Right(personList.toList)).recover {
       case e: Exception => Left(e.getMessage)
     }
 
   def getPerson(id: Int): Future[Either[String, Person]] =
     (for {
-      persons <- db.run(persons.filter(_.id === id).result.headOption)
-    } yield persons.map(tuple => Person tupled tuple).toRight(s"Person id=$id not found.")).recover {
+      person <- db.run(persons.filter(_.id === id).result.headOption)
+    } yield person match {
+      case Some(p) => Right(p)
+      case None => Left(s"Person id=$id not found.")
+    }).recover {
       case e: Exception => Left(e.getMessage)
     }
 
   def addPerson(person: Person): Future[Either[String, Int]] =
     (for {
-      result <- db.run(persons += Person.unapply(person).get)
+      result <- db.run(persons += person)
     } yield Right(result)).recover {
       case e: Exception => Left(e.getMessage)
     }
@@ -83,7 +84,7 @@ class PersonRepo(db: Database)(implicit ec: ExecutionContextExecutor) extends Pe
 
   def updatePerson(person: Person): Future[Either[String, Int]] =
     (for {
-      result <- db.run(persons.filter(_.id === person.id).update(Person.unapply(person).get))
+      result <- db.run(persons.filter(_.id === person.id).update(person))
     } yield if (result == 0) Left(s"Cannot update, person id=${person.id} not found.") else Right(result)).recover {
       case e: Exception => Left(e.getMessage)
     }
